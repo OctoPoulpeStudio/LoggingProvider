@@ -21,7 +21,12 @@ struct LoggingProvider {
 			loggers[category] = logger
 			return logger
 		} else {
+			#if DEBUG
 			let logger = PrintWrapper(subsystem: subsystem, category: category)
+			#else
+			print("empty logger created")
+			let logger = EmptyWrapper(subsystem: subsystem, category: category)
+			#endif
 			loggers[category] = logger
 			return logger
 		}
@@ -167,6 +172,51 @@ internal struct LoggerWrapper:LogWrapper
 	
 	func fault(_ message: String) {
 		logger.fault(OSLogMessage(stringLiteral: message))
+	}
+	
+	
+}
+
+internal struct EmptyWrapper:LogWrapper
+{
+	var subsystem: String
+	
+	var category: String
+	
+	func log(level: OSLogType, _ message: String) {
+		
+	}
+	
+	func debug(_ message: String) {
+		
+	}
+	
+	func trace(_ message: String) {
+		
+	}
+	
+	func info(_ message: String) {
+		
+	}
+	
+	func notice(_ message: String) {
+		
+	}
+	
+	func error(_ message: String) {
+		
+	}
+	
+	func warning(_ message: String) {
+		
+	}
+	
+	func critical(_ message: String) {
+		
+	}
+	
+	func fault(_ message: String) {
+		
 	}
 	
 	
