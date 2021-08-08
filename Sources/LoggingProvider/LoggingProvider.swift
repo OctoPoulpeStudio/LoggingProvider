@@ -18,12 +18,14 @@ public class LoggingProvider {
 	{
 		
 		if #available(iOS 14, *) {
-			let logger = LoggerWrapper(subsystem: subsystem, category: category)
+			let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
+			let logger = LoggerWrapper(subsystem: subsystem, category: category, visibility: visibility)
 			loggers[category] = logger
 			return logger
 		} else {
 			#if DEBUG
-			let logger = PrintWrapper(subsystem: subsystem, category: category)
+			let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
+			let logger = PrintWrapper(subsystem: subsystem, category: category, visibility: visibility)
 			#else
 			print("empty logger created")
 			let logger = EmptyWrapper(subsystem: subsystem, category: category)
@@ -85,39 +87,56 @@ internal struct PrintWrapper:LogWrapper
 	
 	var category: String
 	
+	let visibility: LoggingVisibility
+	
+	init(subsystem:String, category:String, visibility: LoggingVisibility) {
+		self.subsystem = subsystem
+		self.category = category
+		self.visibility = visibility
+	}
+	
 	func log(level: OSLogType, _ message: String) {
+		guard visibility <= LoggingVisibility(logType: level) else {return}
 		print("\(subsystem):\(category) [\(level)] : \(message)")
 	}
 	
 	func debug(_ message: String) {
+		guard visibility <= .debug else {return}
 		print("\(subsystem):\(category) [debug] : \(message)")
 	}
 	
 	func trace(_ message: String) {
+		guard visibility <= .trace else {return}
 		print("\(subsystem):\(category) [trace] : \(message)")
 	}
 	
 	func info(_ message: String) {
+		guard visibility <= .info else {return}
 		print("\(subsystem):\(category) [info] : \(message)")
 	}
 	
 	func notice(_ message: String) {
+		guard visibility <= .notice else {return}
 		print("\(subsystem):\(category) [notice] : \(message)")
 	}
 	
 	func error(_ message: String) {
+		guard visibility <= .error else {return}
 		print("\(subsystem):\(category) [error] : \(message)")
 	}
 	
 	func warning(_ message: String) {
+		guard visibility <= .warning else {return}
 		print("\(subsystem):\(category) [warning] : \(message)")
 	}
 	
 	func critical(_ message: String) {
+		guard visibility <= .critical else {return}
 		print("\(subsystem):\(category) [critical] : \(message)")
 	}
 	
 	func fault(_ message: String) {
+		guard visibility <= .fault else {return}
 		print("\(subsystem):\(category) [fault] : \(message)")
 	}
 	
@@ -133,46 +152,58 @@ internal struct LoggerWrapper:LogWrapper
 	
 	var logger:Logger
 	
-	init(subsystem:String, category:String) {
+	let visibility: LoggingVisibility
+	
+	init(subsystem:String, category:String, visibility: LoggingVisibility) {
 		self.subsystem = subsystem
 		self.category = category
 		logger = Logger(subsystem: subsystem, category: category)
+		self.visibility = visibility
 	}
 	
 	func log(level: OSLogType, _ message: String) {
-		logger.log(level: level, OSLogMessage(stringLiteral: message))
+		guard visibility <= LoggingVisibility(logType: level) else {return}
+		logger.log(level: level, "\(message)")
 	}
 	
 	func debug(_ message: String) {
-		logger.debug(OSLogMessage(stringLiteral: message))
+		guard visibility <= .debug else {return}
+		logger.debug("\(message)")
 	}
 	
 	func trace(_ message: String) {
-		logger.trace(OSLogMessage(stringLiteral: message))
+		guard visibility <= .trace else {return}
+		logger.trace("\(message)")
 	}
 	
 	func info(_ message: String) {
-		logger.info(OSLogMessage(stringLiteral: message))
+		guard visibility <= .info else {return}
+		logger.info("\(message)")
 	}
 	
 	func notice(_ message: String) {
-		logger.notice(OSLogMessage(stringLiteral: message))
+		guard visibility <= .notice else {return}
+		logger.notice("\(message)")
 	}
 	
 	func error(_ message: String) {
-		logger.error(OSLogMessage(stringLiteral: message))
+		guard visibility <= .error else {return}
+		logger.error("\(message)")
 	}
 	
 	func warning(_ message: String) {
-		logger.warning(OSLogMessage(stringLiteral: message))
+		guard visibility <= .warning else {return}
+		logger.warning("\(message)")
 	}
 	
 	func critical(_ message: String) {
-		logger.critical(OSLogMessage(stringLiteral: message))
+		guard visibility <= .critical else {return}
+		logger.critical("\(message)")
 	}
 	
 	func fault(_ message: String) {
-		logger.fault(OSLogMessage(stringLiteral: message))
+		guard visibility <= .fault else {return}
+		logger.fault("\(message)")
 	}
 	
 	
