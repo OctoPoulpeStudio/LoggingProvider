@@ -38,28 +38,28 @@ public class LoggingProvider {
 	public func log(level: OSLogType, _ message:String, forCategory category:String){
 		getLogger(forCategory: category).log(level: level, message)
 	}
-	public func debug(_ message:String, forCategory category:String){
+	public func debug(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).debug(message)
 	}
-	public func trace(_ message:String, forCategory category:String){
+	public func trace(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).trace(message)
 	}
-	public func info(_ message:String, forCategory category:String){
+	public func info(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).info(message)
 	}
-	public func notice(_ message:String, forCategory category:String){
+	public func notice(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).notice(message)
 	}
-	public func error(_ message:String, forCategory category:String){
-		getLogger(forCategory: category).error(message)
-	}
-	public func warning(_ message:String, forCategory category:String){
+	public func warning(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).warning(message)
 	}
-	public func critical(_ message:String, forCategory category:String){
+	public func error(_ message:String, forCategory category:String = ""){
+		getLogger(forCategory: category).error(message)
+	}
+	public func critical(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).critical(message)
 	}
-	public func fault(_ message:String, forCategory category:String){
+	public func fault(_ message:String, forCategory category:String = ""){
 		getLogger(forCategory: category).fault(message)
 	}
 }
@@ -120,14 +120,14 @@ internal struct PrintWrapper:LogWrapper
 		print("\(subsystem):\(category) [notice] : \(message)")
 	}
 	
-	func error(_ message: String) {
-		guard visibility <= .error else {return}
-		print("\(subsystem):\(category) [error] : \(message)")
-	}
-	
 	func warning(_ message: String) {
 		guard visibility <= .warning else {return}
 		print("\(subsystem):\(category) [warning] : \(message)")
+	}
+	
+	func error(_ message: String) {
+		guard visibility <= .error else {return}
+		print("\(subsystem):\(category) [error] : \(message)")
 	}
 	
 	func critical(_ message: String) {
@@ -186,14 +186,14 @@ internal struct LoggerWrapper:LogWrapper
 		logger.notice("\(message)")
 	}
 	
-	func error(_ message: String) {
-		guard visibility <= .error else {return}
-		logger.error("\(message)")
-	}
-	
 	func warning(_ message: String) {
 		guard visibility <= .warning else {return}
 		logger.warning("\(message)")
+	}
+	
+	func error(_ message: String) {
+		guard visibility <= .error else {return}
+		logger.error("\(message)")
 	}
 	
 	func critical(_ message: String) {
@@ -235,11 +235,11 @@ internal struct EmptyWrapper:LogWrapper
 		
 	}
 	
-	func error(_ message: String) {
+	func warning(_ message: String) {
 		
 	}
 	
-	func warning(_ message: String) {
+	func error(_ message: String) {
 		
 	}
 	
