@@ -4,7 +4,7 @@
 //
 //  Created by la pieuvre on 05/08/2021.
 //
-
+import Foundation
 import os
 
 public enum LoggingVisibility: Int, Comparable
@@ -12,15 +12,23 @@ public enum LoggingVisibility: Int, Comparable
 	public static func < (lhs: LoggingVisibility, rhs: LoggingVisibility) -> Bool {
 		lhs.rawValue < rhs.rawValue
 	}
-	
+	/// the lowest level logging : rawValue = 0
 	case debug = 0
+	/// rawValue = 1
 	case trace
+	/// rawValue = 2
 	case info
+	/// rawValue = 3
 	case notice
+	/// rawValue = 4
 	case warning
+	/// rawValue = 5
 	case error
+	/// rawValue = 6
 	case critical
+	/// rawValue = 7
 	case fault
+	/// rawValue = 8
 	case none
 	
 	public init(logType:OSLogType)
@@ -75,16 +83,25 @@ public class LoggingConfigurator
 		return
 		#endif
 		
+		guard domain != "" else
+		{
+			configsTree.visibility = visibility
+			return
+		}
+		
 		let categories = parse(domainName: domain)
 		
 		var currentConfig:LoggingConfiguration = configsTree
+		var parentVisibility:LoggingVisibility = configsTree.visibility
 		for i in 0..<categories.count {
 			let subcategory = categories[i]
-			let isLeaf = i < categories.count - 1
-			let currentVisibility: LoggingVisibility =  isLeaf ? .debug : visibility
+			let isBranch = i < categories.count - 1
+			parentVisibility = max(.debug, parentVisibility)
+			// create the visibility for the leaf or for a newly created parent
+			let currentVisibility: LoggingVisibility =  isBranch ? .debug : visibility
 			if  let  subConfig = currentConfig.subcategories[subcategory]
 			{
-				if isLeaf
+				if !isBranch
 				{
 					subConfig.visibility = currentVisibility
 				}
@@ -108,15 +125,22 @@ public class LoggingConfigurator
 		#if !DEBUG
 		return .debug
 		#endif
+		guard subsystem != "" else {
+			return configsTree.visibility
+		}
+		
+		
 		let categories = parse(domainName: subsystem+"."+category)
 		var currentConfig:LoggingConfiguration? = configsTree
+		var parentVisibility = configsTree.visibility
 		for category in categories {
 			currentConfig = currentConfig?.subcategories[category]
 			if currentConfig == nil {
-				return .debug
+				return parentVisibility
 			}
+			parentVisibility = max(parentVisibility, currentConfig?.visibility ?? .debug)
 		}
-		return currentConfig?.visibility ?? .debug
+		return parentVisibility
 	}
 }
 
