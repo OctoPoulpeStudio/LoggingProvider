@@ -93,8 +93,7 @@ public class LoggingConfigurator
 		
 		var currentConfig:LoggingConfiguration = configsTree
 		var parentVisibility:LoggingVisibility = configsTree.visibility
-		for i in 0..<categories.count {
-			let subcategory = categories[i]
+		for (i, subcategory)  in categories.enumerated() {
 			let isBranch = i < categories.count - 1
 			parentVisibility = max(.debug, parentVisibility)
 			// create the visibility for the leaf or for a newly created parent
