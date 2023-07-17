@@ -16,23 +16,21 @@ public class LoggingProvider {
 	
 	private func createNewLogger(forCategory category:String)->LogWrapper
 	{
-		
+        let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
+        var logger: LogWrapper
+#if DEBUG
+        logger = PrintWrapper(subsystem: subsystem, category: category, visibility: visibility)
+#else
 		if #available(iOS 14, *) {
-			let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
-			let logger = LoggerWrapper(subsystem: subsystem, category: category, visibility: visibility)
-			loggers[category] = logger
-			return logger
+            logger = LoggerWrapper(subsystem: subsystem, category: category, visibility: visibility)
+			
 		} else {
-			#if DEBUG
-			let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
-			let logger = PrintWrapper(subsystem: subsystem, category: category, visibility: visibility)
-			#else
 			print("empty logger created")
-			let logger = EmptyWrapper(subsystem: subsystem, category: category)
-			#endif
-			loggers[category] = logger
-			return logger
+			logger = EmptyWrapper(subsystem: subsystem, category: category)
 		}
+#endif
+        loggers[category] = logger
+        return logger
 	}
 	
 	public func log(level: OSLogType, _ message:String, forCategory category:String){
