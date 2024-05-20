@@ -5,15 +5,16 @@ import PackageDescription
 
 let package = Package(
     name: "LoggingProvider",
-	platforms: [
-		.iOS(.v12),
-        .macOS(.v11)
-	],
+    platforms: [
+        .iOS(.v12),
+        .macOS(.v11),
+    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
             name: "LoggingProvider",
-            targets: ["LoggingProvider"]),
+            targets: ["LoggingProvider"]
+        ),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -24,9 +25,11 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "LoggingProvider",
-            dependencies: []),
+            dependencies: []
+        ),
         .testTarget(
             name: "LoggingProviderTests",
-            dependencies: ["LoggingProvider"]),
+            dependencies: ["LoggingProvider"]
+        ),
     ]
 )
