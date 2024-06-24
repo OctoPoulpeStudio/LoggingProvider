@@ -49,9 +49,9 @@ public enum LoggingVisibility: Int, Comparable {
     }
 }
 
-internal class LoggingConfiguration {
+public class LoggingConfiguration {
     internal let category: String
-    internal var visibility: LoggingVisibility
+    public var visibility: LoggingVisibility
     internal var subcategories: [String: LoggingConfiguration] = [:]
 
     internal init(category: String, visibility: LoggingVisibility) {
@@ -67,14 +67,14 @@ public class LoggingConfigurator {
 
     private init() {
         wrapperSelector.add(loggerFactory: { subsystem, category, visibility in
-            let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
-            return PrintWrapper(subsystem: subsystem, category: category, visibility: visibility)
+            let configuration = LoggingConfigurator.shared.getConfiguration(forSubsystem: subsystem, category: category)
+            return PrintWrapper(subsystem: subsystem, category: category, configuration: configuration)
         }, forProfile: .debug)
         
         wrapperSelector.add(loggerFactory: { subsystem, category, visibility in
-            let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
+            let configuration = LoggingConfigurator.shared.getConfiguration(forSubsystem: subsystem, category: category)
             if #available(iOS 14, *) {
-                return LoggerWrapper(subsystem: subsystem, category: category, visibility: visibility)
+                return LoggerWrapper(subsystem: subsystem, category: category, configuration: configuration)
                 
             } else {
                 print("empty logger created")
@@ -95,31 +95,34 @@ public class LoggingConfigurator {
             return
         #endif
 
-        guard domain != "" else {
-            configsTree.visibility = visibility
-            return
-        }
-
         let categories = parse(domainName: domain)
-
-        var currentConfig: LoggingConfiguration = configsTree
-        var parentVisibility: LoggingVisibility = configsTree.visibility
-        for (i, subcategory) in categories.enumerated() {
-            let isBranch = i < categories.count - 1
-            parentVisibility = max(.debug, parentVisibility)
-            // create the visibility for the leaf or for a newly created parent
-            let currentVisibility: LoggingVisibility = isBranch ? .debug : visibility
-            if let subConfig = currentConfig.subcategories[subcategory] {
-                if !isBranch {
-                    subConfig.visibility = currentVisibility
-                }
-                currentConfig = subConfig
-            } else {
-                let newConfig = LoggingConfiguration(category: subcategory, visibility: currentVisibility)
-                currentConfig.subcategories[subcategory] = newConfig
-                currentConfig = newConfig
-            }
+        
+        let currentConfig = getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories)
+        assignVisibility(toSubtree: currentConfig, visibility: visibility)
+    }
+    
+    private func getOrCreateSubcategoryConfiguration(tree: LoggingConfiguration, subcategories: [String])-> LoggingConfiguration {
+        var defaultVisibility = tree.visibility
+        var currentConfig = tree
+        for subcategory in subcategories {
+            currentConfig = currentConfig.subcategories[subcategory, orInsert: LoggingConfiguration(category: subcategory, visibility: defaultVisibility)]
+            defaultVisibility = currentConfig.visibility
         }
+        
+        return currentConfig
+    }
+    
+    private func assignVisibility(toSubtree subtree: LoggingConfiguration, visibility: LoggingVisibility) {
+        subtree.visibility = visibility
+        for subcategory in subtree.subcategories.keys {
+            guard let subsubtree = subtree.subcategories[subcategory] else { continue }
+            assignVisibility(toSubtree: subsubtree, visibility: visibility)
+        }
+    }
+    
+    public func getVisibility(forDomain domain: String) -> LoggingVisibility {
+        let categories = parse(domainName: domain)
+        return getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories).visibility
     }
 
     internal func getVisibility(forSubsystem subsystem: String, category: String) -> LoggingVisibility {
@@ -127,24 +130,33 @@ public class LoggingConfigurator {
          Since we don'"t want to filter from the source the logs on none debug build, we can just return debug directly.
          Sparing resources for release build
          */
-        #if !DEBUG
-            return .debug
-        #endif
+#if !DEBUG
+        return .debug
+#endif
+        return getConfiguration(forSubsystem: subsystem, category: category).visibility
+    }
+    
+    internal func getOrCreateConfiguration(forSubsystem subsystem: String, category: String) -> LoggingConfiguration {
+        let categories = parse(domainName: subsystem + "." + category)
+        return getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories)
+    }
+    
+    internal func getConfiguration(forSubsystem subsystem: String, category: String) -> LoggingConfiguration {
+        
         guard subsystem != "" else {
-            return configsTree.visibility
+            return configsTree
         }
-
+        
         let categories = parse(domainName: subsystem + "." + category)
         var currentConfig: LoggingConfiguration? = configsTree
-        var parentVisibility = configsTree.visibility
-        for category in categories {
+        
+        for category in categories.reversed() {
             currentConfig = currentConfig?.subcategories[category]
-            if currentConfig == nil {
-                return parentVisibility
+            if let currentConfig {
+                return currentConfig
             }
-            parentVisibility = max(parentVisibility, currentConfig?.visibility ?? .debug)
         }
-        return parentVisibility
+        return configsTree
     }
 }
 

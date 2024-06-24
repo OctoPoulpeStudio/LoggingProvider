@@ -31,13 +31,13 @@ internal class LoggerWrapper: LogWrapper {
     
     var logger: Logger
     
-    let visibility: LoggingVisibility
+    var configuration: LoggingConfiguration
     
-    init(subsystem: String, category: String, visibility: LoggingVisibility) {
+    init(subsystem: String, category: String, configuration: LoggingConfiguration) {
         self.subsystem = subsystem
         self.category = category
         logger = Logger(subsystem: subsystem, category: category)
-        self.visibility = visibility
+        self.configuration = configuration
         
         
         debugCall = { message in
@@ -74,7 +74,7 @@ internal class LoggerWrapper: LogWrapper {
     }
     
     func log(level: OSLogType, _ message: String) {
-        guard visibility <= LoggingVisibility(logType: level) else { return }
+        guard configuration.visibility <= LoggingVisibility(logType: level) else { return }
         logger.log(level: level, "\(message)")
     }
     

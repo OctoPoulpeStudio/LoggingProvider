@@ -11,7 +11,7 @@ internal struct PrintWrapper: LogWrapper {
     
     var category: String
     
-    let visibility: LoggingVisibility
+    var configuration: LoggingConfiguration
     
     var debugCall: ((String) -> Void)?
     var traceCall: ((String) -> Void)?
@@ -22,10 +22,10 @@ internal struct PrintWrapper: LogWrapper {
     var criticalCall: ((String) -> Void)?
     var faultCall: ((String) -> Void)?
     
-    init(subsystem: String, category: String, visibility: LoggingVisibility) {
+    init(subsystem: String, category: String, configuration: LoggingConfiguration) {
         self.subsystem = subsystem
         self.category = category
-        self.visibility = visibility
+        self.configuration = configuration
         
         debugCall = {message in
             print("\(subsystem):\(category) [debug] : \(message)")
@@ -61,7 +61,7 @@ internal struct PrintWrapper: LogWrapper {
     }
     
     func log(level: OSLogType, _ message: String) {
-        guard visibility <= LoggingVisibility(logType: level) else { return }
+        guard configuration.visibility <= LoggingVisibility(logType: level) else { return }
         print("\(subsystem):\(category) [\(level)] : \(message)")
     }
 }

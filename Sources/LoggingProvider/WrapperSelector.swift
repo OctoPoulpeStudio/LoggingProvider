@@ -11,22 +11,22 @@ import OSLog
 public class WrapperSelector {
     
     
-    private var loggerProfiles: [LoggingProfile: [(String, String, LoggingVisibility)->LogWrapper]] = [:]
+    private var loggerProfiles: [LoggingProfile: [(String, String, LoggingConfiguration)->LogWrapper]] = [:]
     
-    public func add(loggerFactory:@escaping (String, String, LoggingVisibility)->LogWrapper, forProfile profile: LoggingProfile) {
+    public func add(loggerFactory:@escaping (String, String, LoggingConfiguration)->LogWrapper, forProfile profile: LoggingProfile) {
         loggerProfiles[profile, default: []].append(loggerFactory)
     }
     
-    internal func createNewLogger(forSubsystem subsystem: String,  category: String, visibility: LoggingVisibility) -> LogWrapper {
-        let result = CombinedLoggerWrapper(subsystem: subsystem, category: category, visibility: visibility)
+    internal func createNewLogger(forSubsystem subsystem: String,  category: String, configuration: LoggingConfiguration) -> LogWrapper {
+        let result = CombinedLoggerWrapper(subsystem: subsystem, category: category, configuration: configuration)
 #if DEBUG
         let currentProfile = LoggingProfile.debug
 #else
         let currentProfile = LoggingProfile.release
 #endif
-        guard let profiles = loggerProfiles[currentProfile] else {return EmptyWrapper(subsystem: subsystem, category: category, visibility: visibility)}
+        guard let profiles = loggerProfiles[currentProfile] else {return EmptyWrapper(subsystem: subsystem, category: category, configuration: configuration)}
         for factory in profiles {
-            result.add(logger:factory(subsystem, category, visibility))
+            result.add(logger:factory(subsystem, category, configuration))
         }
         return result
     }

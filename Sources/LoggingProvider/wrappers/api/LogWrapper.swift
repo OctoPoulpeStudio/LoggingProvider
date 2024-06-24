@@ -16,7 +16,7 @@ public struct VisibilityUtil {
 public protocol LogWrapper {
     var subsystem: String { get }
     var category: String { get }
-    var visibility: LoggingVisibility { get }
+    var configuration: LoggingConfiguration { get set}
     
     var debugCall:((String)->Void)? {get set}
     var traceCall:((String) -> Void)? {get set}
@@ -89,7 +89,7 @@ public extension LogWrapper {
     }
     
     private func logIfVisible(message: String, visibility: LoggingVisibility, logMethod: ((String) -> Void)?) {
-        guard VisibilityUtil.shouldLog(currentVisibility: self.visibility, messageVisibility: visibility) else { return }
+        guard VisibilityUtil.shouldLog(currentVisibility: self.configuration.visibility, messageVisibility: visibility) else { return }
         logMethod?(message)
     }
 }

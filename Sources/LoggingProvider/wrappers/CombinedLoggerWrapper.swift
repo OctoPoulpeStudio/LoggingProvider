@@ -15,7 +15,7 @@ internal class CombinedLoggerWrapper: LogWrapper {
     
     var subsystem: String
     var category: String
-    var visibility: LoggingVisibility
+    var configuration: LoggingConfiguration
     
     var debugCall: ((String) -> Void)?
     var traceCall: ((String) -> Void)?
@@ -26,10 +26,10 @@ internal class CombinedLoggerWrapper: LogWrapper {
     var criticalCall: ((String) -> Void)?
     var faultCall: ((String) -> Void)?
     
-    internal init(subsystem: String, category: String, visibility: LoggingVisibility) {
+    internal init(subsystem: String, category: String, configuration: LoggingConfiguration) {
         self.subsystem = subsystem
         self.category = category
-        self.visibility = visibility
+        self.configuration = configuration
         
         debugCall = { message in
             for wrapper in self.wrappers {
@@ -81,6 +81,8 @@ internal class CombinedLoggerWrapper: LogWrapper {
     }
     
     func add(logger: LogWrapper) {
+        var logger = logger
+        logger.configuration = configuration
         wrappers.append(logger)
     }
     

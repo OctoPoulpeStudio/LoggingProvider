@@ -11,7 +11,7 @@ internal struct EmptyWrapper: LogWrapper {
     
     var subsystem: String
     var category: String
-    var visibility: LoggingVisibility = .none
+    var configuration: LoggingConfiguration = LoggingConfiguration(category: "", visibility: .none)
     
     var debugCall: ((String) -> Void)? = nil
     var traceCall: ((String) -> Void)? = nil

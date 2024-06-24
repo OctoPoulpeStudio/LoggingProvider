@@ -21,8 +21,8 @@ public class LoggingProvider {
 
     private func createNewLogger(forCategory category: String) -> LogWrapper {
         print("create logger for subsystem : \(subsystem) and cat: \(category)")
-        let visibility = LoggingConfigurator.shared.getVisibility(forSubsystem: subsystem, category: category)
-        let logger = LoggingConfigurator.shared.wrapperSelector.createNewLogger(forSubsystem: subsystem, category: category, visibility: visibility)
+        let configuration = LoggingConfigurator.shared.getOrCreateConfiguration(forSubsystem: subsystem, category: category)
+        let logger = LoggingConfigurator.shared.wrapperSelector.createNewLogger(forSubsystem: subsystem, category: category, configuration: configuration )
         loggers[category] = logger
         return logger
     }
