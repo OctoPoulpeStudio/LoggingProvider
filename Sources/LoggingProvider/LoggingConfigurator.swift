@@ -63,7 +63,10 @@ public class LoggingConfiguration {
 public class LoggingConfigurator {
     public static let shared: LoggingConfigurator = .init()
     
+    private let configQueue = DispatchQueue(label: "com.LogginProvider.configQueue", attributes: .concurrent)
+    
     public let wrapperSelector: WrapperSelector = .init()
+    private var configsTree: LoggingConfiguration = .init(category: "", visibility: .debug)
 
     private init() {
         wrapperSelector.add(loggerFactory: { subsystem, category, visibility in
@@ -83,8 +86,6 @@ public class LoggingConfigurator {
         }, forProfile: .release)
     }
 
-    private var configsTree: LoggingConfiguration = .init(category: "", visibility: .debug)
-
     public func add(visibility: LoggingVisibility, forDomain domain: String) {
         /*
          Log are stored in a file when logger is used on released version.
@@ -97,13 +98,16 @@ public class LoggingConfigurator {
 
         let categories = parse(domainName: domain)
         
-        let currentConfig = getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories)
-        assignVisibility(toSubtree: currentConfig, visibility: visibility)
+        configQueue.async(flags: .barrier) {
+            let currentConfig = self.getOrCreateSubcategoryConfiguration(tree: self.configsTree, subcategories: categories)
+            self.assignVisibility(toSubtree: currentConfig, visibility: visibility)
+        }
     }
     
     private func getOrCreateSubcategoryConfiguration(tree: LoggingConfiguration, subcategories: [String])-> LoggingConfiguration {
         var defaultVisibility = tree.visibility
         var currentConfig = tree
+        
         for subcategory in subcategories {
             currentConfig = currentConfig.subcategories[subcategory, orInsert: LoggingConfiguration(category: subcategory, visibility: defaultVisibility)]
             defaultVisibility = currentConfig.visibility
@@ -116,13 +120,15 @@ public class LoggingConfigurator {
         subtree.visibility = visibility
         for subcategory in subtree.subcategories.keys {
             guard let subsubtree = subtree.subcategories[subcategory] else { continue }
-            assignVisibility(toSubtree: subsubtree, visibility: visibility)
+            self.assignVisibility(toSubtree: subsubtree, visibility: visibility)
         }
     }
     
     public func getVisibility(forDomain domain: String) -> LoggingVisibility {
         let categories = parse(domainName: domain)
-        return getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories).visibility
+        return configQueue.sync {
+            getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories).visibility
+        }
     }
 
     internal func getVisibility(forSubsystem subsystem: String, category: String) -> LoggingVisibility {
@@ -130,33 +136,42 @@ public class LoggingConfigurator {
          Since we don'"t want to filter from the source the logs on none debug build, we can just return debug directly.
          Sparing resources for release build
          */
-#if !DEBUG
+        #if !DEBUG
         return .debug
-#endif
-        return getConfiguration(forSubsystem: subsystem, category: category).visibility
+        #endif
+        
+        return configQueue.sync {
+            getConfiguration(forSubsystem: subsystem, category: category).visibility
+        }
     }
     
     internal func getOrCreateConfiguration(forSubsystem subsystem: String, category: String) -> LoggingConfiguration {
         let categories = parse(domainName: subsystem + "." + category)
-        return getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories)
+        
+        return configQueue.sync {
+            getOrCreateSubcategoryConfiguration(tree: configsTree, subcategories: categories)
+        }
     }
     
     internal func getConfiguration(forSubsystem subsystem: String, category: String) -> LoggingConfiguration {
         
         guard subsystem != "" else {
-            return configsTree
+            return configQueue.sync { configsTree }
         }
         
         let categories = parse(domainName: subsystem + "." + category)
-        var currentConfig: LoggingConfiguration? = configsTree
         
-        for category in categories.reversed() {
-            currentConfig = currentConfig?.subcategories[category]
-            if let currentConfig {
-                return currentConfig
+        return configQueue.sync {
+            var currentConfig: LoggingConfiguration? = configsTree
+            
+            for category in categories.reversed() {
+                currentConfig = currentConfig?.subcategories[category]
+                if let currentConfig {
+                    return currentConfig
+                }
             }
+            return configsTree
         }
-        return configsTree
     }
 }
 
